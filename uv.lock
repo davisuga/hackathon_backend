@@ -1394,6 +1394,9 @@ anthropic = [
 google = [
     { name = "google-genai" },
 ]
+groq = [
+    { name = "groq" },
+]
 
 [[package]]
 name = "pydantic-core"
