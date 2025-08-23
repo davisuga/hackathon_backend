@@ -92,7 +92,7 @@ class PostgresStorage(Storage):
 @asynccontextmanager
 async def db_pool() -> AsyncIterator[asyncpg.Pool]:
     """Provides a connection pool to the PostgreSQL database."""
-    pool = await asyncpg.create_pool(DB_URL)
+    pool = await asyncpg.create_pool(dsn=DB_URL)
     try:
         async with pool.acquire() as conn:
             await conn.execute("""
