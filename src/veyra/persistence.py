@@ -4,6 +4,7 @@ import asyncpg
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Any
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+from src.whatsapp.model import Message
 from .models import AutoMarketState, WorkflowStatus
 
 DB_URL = os.getenv("POSTGRES_URL")
@@ -21,6 +22,9 @@ class Storage:
         raise NotImplementedError
 
     async def get_page_content(self, thread_id: str) -> str | None:
+        raise NotImplementedError
+    
+    async def insert_message(self, message: Message):
         raise NotImplementedError
 
 class PostgresStorage(Storage):
@@ -70,6 +74,20 @@ class PostgresStorage(Storage):
     async def get_page_content(self, thread_id: str) -> str | None:
         async with self.pool.acquire() as conn:
             return await conn.fetchval("SELECT html_content FROM workflows WHERE thread_id = $1", thread_id)
+        
+    ## Messages
+
+    async def insert_message(self, message: Message):
+        async with self.pool.acquire() as conn:
+             await conn.execute(
+                """
+                INSERT INTO messages (thread_id, message_id, role, content)
+                VALUES ($1, $2, $3, $4)
+                """,
+                message.thread_id, message.message_id, message.role, message.content
+            )
+             
+    ## End of Messages
 
 @asynccontextmanager
 async def db_pool() -> AsyncIterator[asyncpg.Pool]:
@@ -90,7 +108,15 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 );
-            """)
+                               
+                CREATE TABLE IF NOT EXISTS messages (
+                    message_id VARCHAR(32) PRIMARY KEY,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    thread_id VARCHAR(32) NOT NULL,
+                    role VARCHAR(12) NOT NULL,
+                    content TEXT
+                );
+            """) #TODO: Create index by thread id over messages tabl
         yield pool
     finally:
         await pool.close()

@@ -12,6 +12,7 @@ from agno.tools.whatsapp import WhatsAppTools
 from agno.utils.log import log_error, log_info, log_warning
 from agno.utils.whatsapp import get_media_async, send_image_message_async, typing_indicator_async, upload_media_async
 
+
 from .security import validate_webhook_signature
 
 from langfuse import get_client
@@ -201,6 +202,12 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
                 )
             except Exception as send_error:
                 log_error(f"Error sending error message: {str(send_error)}")
+
+    @router.post("/messages")
+    async def receive_message(request: Request):
+        payload = await request.body()
+        storage = request.app.state['storage']
+        return payload
 
     async def _send_whatsapp_message(recipient: str, message: str, italics: bool = False):
         langfuse.update_current_span(output={"text": message[:128]})
