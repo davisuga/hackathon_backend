@@ -1,17 +1,11 @@
 import os
 
-from datetime import datetime
 from textwrap import dedent
-from pydantic import BaseModel
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
-
-class CalendarPost(BaseModel):
-    date: datetime
-    title: str
-    description: str
+from .models import CalendarPost
 
 
 key = os.getenv("OPENROUTER_API_KEY")

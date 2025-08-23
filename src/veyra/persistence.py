@@ -152,14 +152,13 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     conversation_transcript TEXT NOT NULL,
                     briefing_md TEXT,
                     strategy_and_plan_md TEXT,
-                    calendar_events JSONB,
                     image_urls TEXT[],
                     html_content TEXT,
                     page_url TEXT,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 );
-                alter table 
+                ALTER TABLE workflows ADD COLUMN IF NOT EXISTS calendar_events JSONB;
             """)
 
             # Create index on calendar events for better query performance
