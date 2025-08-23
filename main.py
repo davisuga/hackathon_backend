@@ -9,12 +9,13 @@ from agno.agent import Agent
 
 from src.whatsapp import WhatsappAPI
 from agno.models.openai import OpenAIChat
+from agno.models.google import Gemini
 import logging
 
 from agno.memory.v2 import Memory
 from agno.storage.postgres import PostgresStorage
 from agno.memory.v2.db.postgres import PostgresMemoryDb
-from src.marketing.instructions import instructions
+from src.marketing.instructions import instructions, goal
 
 from src.veyra.persistence import PostgresStorage as VeyraPostgresStorage
 
@@ -28,15 +29,24 @@ db_url = os.environ['POSTGRES_URL']
 
 logger = logging.getLogger(__name__)
 
+def generate_call_link(agent: Agent):
+    """
+    This tool generates a link after the user's setup.
+    """
+    user_id = agent.user_id
+    return f"https://prueba.com/{user_id}"
+
 
 media_agent = Agent(
-    name="Andri",
+    name="Vero",
     
     instructions=instructions,
     add_name_to_instructions=True,
 
-    model=OpenAIChat(id="gpt-4o"),
-    tools=[],
+    goal=goal,
+
+    model=Gemini(id="gemini-2.0-flash"),
+    tools=[generate_call_link],
     show_tool_calls=True,
     enable_session_summaries=True,
 
@@ -67,7 +77,7 @@ async def build_context(phone:  str) -> dict:
 
 whatsapp_app = WhatsappAPI(
     agent=media_agent,
-    name="Zeropipol",
+    name="Vero",
     app_id="zeropipol_agent",
     description="Un agente de marketing que puede almacenar",
     session_state_loader=build_context
