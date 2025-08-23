@@ -1,30 +1,65 @@
-from textwrap import dedent
-from pydantic_ai import Agent
+import os
 
+from datetime import datetime
+from textwrap import dedent
+from pydantic import BaseModel
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.openrouter import OpenRouterProvider
+
+
+class CalendarPost(BaseModel):
+    date: datetime
+    title: str
+    description: str
+
+
+key = os.getenv("OPENROUTER_API_KEY")
+if not key:
+    raise ValueError("OPENROUTER_API_KEY not found in environment variables")
+
+provider = OpenRouterProvider(api_key=key)
+writer_model = OpenAIModel(
+    "google/gemini-2.5-flash",
+    provider=provider,
+)
+
+coder_model = OpenAIModel(
+    "google/gemini-2.5-flash",
+    provider=provider,
+)
 # A specialized agent to synthesize a briefing from a conversation
 briefing_agent = Agent(
-    "openai:gpt-oss-120b",
+    writer_model,
     output_type=str,
     instructions="You are an expert project manager. Read the conversation transcript and distill it into a concise marketing briefing in Markdown format. Cover the product name, target audience, key features, and marketing tone.",
 )
+# To prioritize Cerebras and allow fallback:
+
 
 # A specialized agent to create a marketing strategy and plan
 strategy_agent = Agent(
-    "openai:gpt-oss-120b",
+    writer_model,
     output_type=str,
-    instructions="You are a senior marketing strategist. Based on the provided briefing, create a high-level marketing strategy and a detailed 1-week planning calendar. Format the entire output as a single Markdown document.",
+    instructions="You are a senior marketing strategist. Based on the provided briefing, create a high-level marketing strategy. Format the entire output as a single Markdown document.",
+)
+
+calendar_agent = Agent(
+    writer_model,
+    output_type=list[CalendarPost],
+    instructions="You are a senior marketing strategist. Create a detailed 1-month planning calendar for posts in social media",
 )
 
 # A specialized agent to generate image prompts for an image model
 image_prompt_agent = Agent(
-    "openai:gpt-oss-120b",
+    writer_model,
     output_type=list[str],
-    instructions="You are a creative director. Based on the marketing strategy, generate 3 distinct and detailed prompts for an AI image generator to create hero images for a landing page. The prompts should be visually descriptive, align with the marketing tone, and be suitable for a model like Stable Diffusion.",
+    instructions="You are a creative director. Based on the marketing strategy, generate social media 1 post using html and tailwind css.",
 )
 
 # A specialized agent to generate the final landing page HTML
 html_agent = Agent(
-    "openai:gpt-5-mini",
+    coder_model,
     output_type=str,
     instructions=dedent("""
         You are an expert web developer specializing in high-converting landing pages.
