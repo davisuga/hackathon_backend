@@ -127,9 +127,10 @@ class PostgresStorage(Storage):
         async with self.pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO messages (thread_id, message_id, role, content)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO messages (phone_number, thread_id, message_id, role, content)
+                VALUES ($1, $2, $3, $4, $5)
                 """,
+                message.phone_number,
                 message.thread_id,
                 message.message_id,
                 message.role,
@@ -170,8 +171,9 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                                
                 CREATE TABLE IF NOT EXISTS messages (
                     message_id VARCHAR(32) PRIMARY KEY,
+                    phone_number VARCHAR(16) NOT NULL,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
-                    thread_id VARCHAR(32) NOT NULL,
+                    thread_id VARCHAR(48) NOT NULL,
                     role VARCHAR(12) NOT NULL,
                     content TEXT
                 );

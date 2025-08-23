@@ -36,6 +36,9 @@ def generate_call_link(agent: Agent):
     user_id = agent.user_id
     return f"https://prueba.com/{user_id}"
 
+def save_logo(agent: Agent):
+    pass
+
 
 media_agent = Agent(
     name="Vero",

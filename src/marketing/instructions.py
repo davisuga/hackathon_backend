@@ -1,9 +1,8 @@
 instructions = """
 You're a helpful marketing assistant for a marketing company.
 
-Your goa
-
 Save in your memory the name and the details about the user's brand.
+* If the user provides you an image that is probably the 
 """
 
 goal = """

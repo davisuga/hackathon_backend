@@ -138,12 +138,18 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
                         user_id=phone_number,
                         session_id=f"{phone_number}@whatsapp"
                     )
+                content = await get_media_async(message_image) if message_image else None
+                if content:
+                    pass
+                image = [Image(content=content)] if message_image else None
+                
+                
                 # Generate and send response
                 if agent:
                     response = await agent.arun(
                         message_text,
                         user_id=phone_number,
-                        images=[Image(content=await get_media_async(message_image))] if message_image else None,
+                        images=image,
                         files=[File(content=await get_media_async(message_doc))] if message_doc else None,
                         videos=[Video(content=await get_media_async(message_video))] if message_video else None,
                         audio=[Audio(content=await get_media_async(message_audio))] if message_audio else None,
