@@ -1,4 +1,8 @@
+from contextlib import asynccontextmanager
 from dotenv.main import load_dotenv
+from fastapi import FastAPI
+
+from src.veyra.persistence import db_pool
 load_dotenv()
 
 import os
@@ -70,5 +74,13 @@ whatsapp_app = WhatsappAPI(
 
 app = whatsapp_app.get_app()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage the database connection pool during the app's lifecycle."""
+    async with db_pool() as pool:
+        storage = PostgresStorage(pool)
+        # logfire.instrument_fastapi(app)
+        yield {"storage": storage}
+
 if __name__ == "__main__":
-    whatsapp_app.serve(app="main:app", port=8000, reload=True)
+    whatsapp_app.serve(app="main:app", port=8000, reload=True, lifespan="on")
