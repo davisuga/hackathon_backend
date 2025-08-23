@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: hackathon-backend
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: agno>=1.7.12
+Requires-Dist: fastapi>=0.116.1
+Requires-Dist: langfuse>=3.3.0
+Requires-Dist: openlit>=1.35.0
+Requires-Dist: pydantic-ai-slim[ag-ui,google]>=0.7.4
+Requires-Dist: uvicorn>=0.35.0

@@ -1,0 +1,6 @@
+agno>=1.7.12
+fastapi>=0.116.1
+langfuse>=3.3.0
+openlit>=1.35.0
+pydantic-ai-slim[ag-ui,google]>=0.7.4
+uvicorn>=0.35.0
