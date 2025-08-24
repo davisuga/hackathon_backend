@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from io import BytesIO
 from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateNotFound

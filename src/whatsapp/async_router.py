@@ -6,8 +6,8 @@ from os import getenv
 from typing import Optional, Callable, Awaitable
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi.responses import PlainTextResponse
 
 from agno.agent.agent import Agent
 from agno.media import Audio, File, Image, Video
@@ -16,8 +16,7 @@ from agno.tools.whatsapp import WhatsAppTools
 from agno.utils.log import log_error, log_info, log_warning
 from agno.utils.whatsapp import get_media_async, send_image_message_async, typing_indicator_async, upload_media_async
 from src.veyra.workflow import run_generation_flow
-import asyncio
-from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateNotFound
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
 
 

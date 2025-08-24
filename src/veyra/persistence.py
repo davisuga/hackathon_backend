@@ -1,11 +1,9 @@
 from __future__ import annotations
 import os
 import asyncpg
-import json
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Any, List, Dict
+from typing import AsyncIterator
 from pydantic import TypeAdapter
-from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
 
 from .agents import CalendarPost

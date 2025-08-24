@@ -65,7 +65,7 @@ async def _run_v0_page_step(
         ---
         {workflow.strategy_and_plan_md}
         ---
-        Create a landing page and leave no empty image placeholders.
+        You must create a minimalistic, modern yet bold landing page and leave no empty image placeholders.
         """
     logo_url = brand_info.logo_url if brand_info else None
 
@@ -226,7 +226,7 @@ def _make_run_images_step(number: str):
                 )
                 print(media_id)
                 await send_image_message_async(
-                    media_id=media_id,
+                    media_id=str(media_id),
                     recipient=number,
                 )
                 print("Image sent successfully")

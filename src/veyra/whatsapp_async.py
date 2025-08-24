@@ -41,7 +41,7 @@ async def upload_media_bytes(
     resp = await client.post(MEDIA_URL, headers=AUTH_HEADERS, files=files, data=data)
     try:
         resp.raise_for_status()
-    except httpx.HTTPStatusError as exc:
+    except httpx.HTTPStatusError:
         logger.error("Media upload failed: %s - %s", resp.status_code, resp.text)
         raise
 

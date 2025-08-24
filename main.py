@@ -21,7 +21,6 @@ from agno.agent import Agent
 
 from src.whatsapp.app import WhatsappAPI
 from agno.models.openai import OpenAIChat
-from agno.models.google import Gemini
 import logging
 
 from agno.memory.v2 import Memory
@@ -31,10 +30,9 @@ from src.marketing.instructions import instructions
 
 from src.veyra.persistence import PostgresStorage as VeyraPostgresStorage
 
-from langfuse import get_client, observe
+from langfuse import get_client
 from src.veyra.workflow import renderer
 import openlit
-import logging
 
 logger = logging.getLogger(__name__)
 langfuse = get_client()
