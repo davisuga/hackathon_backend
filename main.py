@@ -30,7 +30,7 @@ from src.marketing.instructions import instructions
 
 from src.veyra.persistence import PostgresStorage as VeyraPostgresStorage
 
-from langfuse import get_client, observe
+from langfuse import get_client
 from src.veyra.workflow import renderer
 import openlit
 

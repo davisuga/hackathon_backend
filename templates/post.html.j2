@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center bg-black">
+  <div id="content" class="relative w-[1080px] h-[1920px] overflow-hidden rounded-xl shadow-xl">
+    <!-- Fondo con imagen -->
+    <div 
+      class="absolute inset-0 bg-cover bg-center"
+      style="background-image: url('{{ image }}');">
+    </div>
+    <!-- Capa oscura para contraste -->
+    <div class="absolute inset-0 bg-black/40"></div>
+
+    <!-- Contenido centrado -->
+    <div class="relative z-10 flex flex-col items-center justify-center h-full px-10 text-center">
+      <h1 class="text-5xl md:text-6xl font-bold drop-shadow-lg mb-6 
+                 px-6 py-4 rounded-2xl text-white {{ accent_color }}">
+        {{ main_text }}
+      </h1>
+      <p class="text-2xl md:text-3xl font-medium drop-shadow-md mb-8 
+                px-5 py-3 rounded-xl text-white {{ accent_color }}">
+        {{ secondary_text }}
+      </p>
+      <div class="px-6 py-3 rounded-full font-semibold text-lg shadow-lg text-white {{ accent_color }}">
+        Destacado
+      </div>
+    </div>
+  </div>
+</body>
+</html>
