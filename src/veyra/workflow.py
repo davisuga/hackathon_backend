@@ -188,29 +188,47 @@ def _make_run_images_step(number: str):
 
         async def process_single_post(post: CalendarPost) -> CalendarPost:
             """Process a single post to generate image prompts."""
-            image = await generate_image(
-                f"""
-                {master_prompt}
-                title: {post.title}
-                description: {post.description}""",
-                resolution=post.resolution,
-            )
-            print(
-                f"Image prompts created for thread {thread_id}, image={image}, post={post}"
-            )
-            if not image:
-                raise HTTPException(
-                    status_code=500, detail="Failed to generate image prompts"
+            try:
+                image = await generate_image(
+                    f"""
+                    {master_prompt}
+                    title: {post.title}
+                    description: {post.description}""",
+                    resolution=post.resolution,
                 )
-            post.image_url = image["image_url"]
-            media = await upload_media_async(
-                image["image_bytes"],
-                mime_type="image/jpeg",
-            )
-            await send_image_message_async(
-                media_id=media["id"],
-                recipient=number,
-            )
+                print(
+                    f"Image prompts created for thread {thread_id}, image={image}, post={post}"
+                )
+                if not image:
+                    raise HTTPException(
+                        status_code=500, detail="Failed to generate image prompts"
+                    )
+                
+                # Check if image is a dict or bytes
+                if isinstance(image, dict):
+                    post.image_url = image["image_url"]
+                    image_bytes = image["image_bytes"]
+                else:
+                    # If it's bytes, we have an error in generate_image
+                    raise HTTPException(
+                        status_code=500, detail="Image generation returned invalid format"
+                    )
+                    
+                media_id = await upload_media_async(
+                    image_bytes,
+                    mime_type="image/jpeg",
+                    filename=f"{post.title.replace(' ', '_')}.jpg"
+                )
+                print(media_id)
+                await send_image_message_async(
+                    media_id=media_id,
+                    recipient=number,
+                )
+                print("Image sent successfully")
+            except Exception as e:
+                print(f"Error processing post {post}: {e}")
+                # Continue with the next post even if one fails
+                pass
             return post
 
         # Run all image prompt generations concurrently

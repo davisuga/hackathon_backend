@@ -11,10 +11,16 @@ from google.genai.types import GenerateImagesConfigDict
 
 BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
-REGION_NAME = "us-east-1"
+REGION_NAME = os.getenv("REGION_NAME") or "us-east-1"
 ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-
+print(
+    "S3_BUCKET_NAME", BUCKET_NAME,
+    "S3_ENDPOINT_URL", ENDPOINT_URL,
+    "REGION_NAME", REGION_NAME,
+    "AWS_ACCESS_KEY", ACCESS_KEY,
+    "AWS_SECRET_ACCESS_KEY", SECRET_KEY,
+)
 
 openai_client = AsyncOpenAI()
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -40,6 +46,10 @@ async def generate_openai(prompt: str, resolution: str = "1024x1024") -> bytes:
 
 async def generate_gemini(prompt: str, resolution: str = "1024x1024") -> bytes:
     """Generate image bytes using Gemini Imagen API."""
+    # with open(
+    #     './image.png'
+    # , 'rb') as f:
+    #     return f.read()
     response = gemini_client.models.generate_images(
         model="imagen-4.0-fast-generate-001",
         prompt=prompt,
@@ -83,11 +93,18 @@ async def generate_image(
     resolution: str = "1024x1024",
 ) -> ImageGenerationOutput:
     """Generate an image with OpenAI or Gemini, upload to S3, return public URL."""
-    if engine == "openai":
-        image_bytes = await generate_openai(prompt, resolution)
-    elif engine == "gemini":
-        image_bytes = await generate_gemini(prompt + "\n resolution: " + resolution)
-    else:
-        raise ValueError(f"Unknown engine: {engine}")
+    try:
+        if engine == "openai":
+            image_bytes = await generate_openai(prompt, resolution)
+        elif engine == "gemini":
+            image_bytes = await generate_gemini(prompt + "\n resolution: " + resolution)
+        else:
+            raise ValueError(f"Unknown engine: {engine}")
 
-    return {"image_url": await upload_to_s3(image_bytes), "image_bytes": image_bytes}
+        return {"image_url": await upload_to_s3(image_bytes), "image_bytes": image_bytes}
+    except Exception as e:
+        print(f"Error generating image: {e}")
+        # Return a default image in case of failure
+        with open('./image.png', 'rb') as f:
+            image_bytes = f.read()
+        return {"image_url": await upload_to_s3(image_bytes), "image_bytes": image_bytes}
