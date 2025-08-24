@@ -131,6 +131,7 @@ class PostgresStorage(Storage):
 
     async def update_workflow(self, state: AutoMarketState) -> None:
         events_ta = TypeAdapter(list[CalendarPost])
+        print(f"Updating workflow [{state.thread_id}] to: {state.status}")
         async with self.pool.acquire() as conn:
             calendar_events_json = None
             if hasattr(state, "calendar_events") and state.calendar_events:
