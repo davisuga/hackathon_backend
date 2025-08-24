@@ -145,7 +145,9 @@ class PostgresStorage(Storage):
             )
 
     ## End of Messages
+    ## Brands
 
+    ## End of Brands
 
 @asynccontextmanager
 async def db_pool() -> AsyncIterator[asyncpg.Pool]:
@@ -185,6 +187,15 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     content TEXT
                 );
             """)  # TODO: Create index by thread id over messages tabl
+
+            await conn.execute("""
+              CREATE TABLE IF NOT EXISTS brands (
+                    brand_id SERIAL PRIMARY KEY,
+                    brand_name VARCHAR(48) NOT NULL,
+                    user_phone VARCHAR(16) NOT NULL,
+                    main_color VARCHAR(8) NOT NULL
+                );    
+                """)
 
         yield pool
     finally:

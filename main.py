@@ -1,5 +1,8 @@
 from contextlib import asynccontextmanager
 from dotenv.main import load_dotenv
+from fastapi.responses import JSONResponse
+
+from src.utils import color_a_hex
 load_dotenv()
 
 from fastapi import FastAPI
@@ -47,6 +50,21 @@ def save_logo(agent: Agent) -> bool:
         return False
     return True
 
+def upsert_brand_info(brand_name: str, user_name: str, brand_color: str, agent: Agent):
+    """
+    Updates the current user's brand info with the provided information. This took should be
+    invoked after the user have saved their logo, please don't call this tool before
+
+    :param str brand_name: the brand's name
+    :param str user_name: the user's name
+    :param str brand_color: uno de los colores conocidos negro, blanco, 
+    gris, rojo, rosa, purpura, violeta, indigo,
+    azul, celeste, cian, teal, verde, verde_claro, lima, amarillo,
+    ambar, naranja, naranja_profundo, cafe, azul_grisaceo.
+    """
+    print("Saving brand's info")
+
+
 
 media_agent = Agent(
     name="Vero",
@@ -57,7 +75,7 @@ media_agent = Agent(
     goal=goal,
 
     model=Gemini(id="gemini-2.0-flash"),
-    tools=[generate_call_link, save_logo],
+    tools=[generate_call_link, save_logo, color_a_hex],
     show_tool_calls=True,
     enable_session_summaries=True,
 
@@ -103,6 +121,13 @@ async def lifespan(app: FastAPI):
         yield {"storage": storage}
 
 app = whatsapp_app.get_app(lifespan=lifespan)
+
+@app.exception_handler(Exception)
+async def validation_exception_handler(request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"message": str(exc)},
+    )
 
 if __name__ == "__main__":
     whatsapp_app.serve(app="main:app", port=8000, reload=True)
