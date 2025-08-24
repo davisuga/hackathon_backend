@@ -77,6 +77,7 @@ class WhatsappAPI(BaseAPIApp):
             CORSMiddleware,
             allow_origins=["*"],
             allow_methods=["*"],
+             allow_credentials=False,
             allow_headers=["*"],
             expose_headers=["*"],
         )
