@@ -240,7 +240,7 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
         storage = request.app.state.storage
         await _send_whatsapp_message(phone_numer, "Estamos trabajando en potenciar tu negocio, en unos minutos te enviaremos el resultado.")
         
-        background_task.add_task(run_generation_flow, conversation_id=conversation_id, storage=storage)
+        background_task.add_task(run_generation_flow, thread_id=conversation_id, storage=storage)
         # TODO: Include this message in the agent context
         print("Call ended!")
 
