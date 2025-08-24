@@ -41,30 +41,27 @@ class Storage:
 
     async def insert_message(self, message: Message):
         raise NotImplementedError
-    async def get_number_by_thread_id(
-        self, thread_id:str
-    )-> str:
+
+    async def get_number_by_thread_id(self, thread_id: str) -> str:
         raise NotImplementedError
-    async def get_user_brand_by_phone(
-        self, phone:str
-    )-> BrandInfo | None:
+
+    async def get_user_brand_by_phone(self, phone: str) -> BrandInfo | None:
         raise NotImplementedError
-    
-    
+
     async def upsert_brand(self, brand: Brand) -> int:
         raise NotImplementedError
-    
+
     async def get_brand_info(self, user_phone: str) -> dict:
         raise NotImplementedError
+
 
 class PostgresStorage(Storage):
     """PostgreSQL implementation of the Storage interface."""
 
     def __init__(self, pool: asyncpg.Pool):
         self.pool = pool
-    async def get_user_brand_by_thread_id(
-        self, phone:str
-    )-> BrandInfo | None:
+
+    async def get_user_brand_by_thread_id(self, phone: str) -> BrandInfo | None:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT * FROM brands WHERE user_phone = $1 limit 1", phone
@@ -72,11 +69,32 @@ class PostgresStorage(Storage):
             if not row:
                 return None
             return BrandInfo(**row)
-    async def get_number_by_thread_id(self, thread_id:str)-> str:
+        
+    async def get_conversation(self, thread_id: str) -> str:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT role, content
+                FROM messages
+                WHERE thread_id = $1
+                ORDER BY created_at ASC
+                """,
+                thread_id,
+            )
+            if not rows:
+                return None
+
+            # Concatenar en formato "role: content"
+            conversation = "\n".join(f"{row['role']}: {row['content']}" for row in rows)
+            return conversation
+
+    async def get_number_by_thread_id(self, thread_id: str) -> str:
         async with self.pool.acquire() as conn:
             return await conn.fetchval(
-                "SELECT phone_number FROM messages WHERE thread_id = $1 limit 1", thread_id
+                "SELECT phone_number FROM messages WHERE thread_id = $1 limit 1",
+                thread_id,
             )
+
     async def get_workflow(self, thread_id: str) -> AutoMarketState | None:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -176,7 +194,6 @@ class PostgresStorage(Storage):
             if not row:
                 return None
             return dict(row)
-    
 
     async def upsert_brand(self, brand: Brand) -> int:
         """
@@ -200,18 +217,26 @@ class PostgresStorage(Storage):
                 brand.user_phone,
                 brand.brand_logo,
                 brand.main_color,
-                brand.user_name
+                brand.user_name,
             )
             return row["brand_id"]
+
     ## End of Brands
+
 
 @asynccontextmanager
 async def db_pool() -> AsyncIterator[asyncpg.Pool]:
     """Provides a connection pool to the PostgreSQL database."""
-    pool = await asyncpg.create_pool(dsn=DB_URL)
+    pool = await asyncpg.create_pool(
+        dsn=DB_URL,
+        statement_cache_size=0,  # <- clave
+        max_cached_statement_lifetime=0,  # opcional, aún más seguro
+        max_cacheable_statement_size=0,
+    )
     try:
         async with pool.acquire() as conn:
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS workflows (
                     thread_id TEXT PRIMARY KEY,
                     status TEXT NOT NULL,
@@ -225,10 +250,12 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 );
                 ALTER TABLE workflows ADD COLUMN IF NOT EXISTS calendar_events JSONB;
-            """)
+            """
+            )
 
             # Create index on calendar events for better query performance
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_workflows_calendar_events 
                 ON workflows USING GIN (calendar_events);
 
@@ -242,9 +269,11 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     role VARCHAR(12) NOT NULL,
                     content TEXT
                 );
-            """)  # TODO: Create index by thread id over messages tabl
+            """
+            )  # TODO: Create index by thread id over messages tabl
 
-            await conn.execute("""
+            await conn.execute(
+                """
               CREATE TABLE IF NOT EXISTS brands (
                     brand_id SERIAL PRIMARY KEY,
                     brand_name VARCHAR(48) NOT NULL,
@@ -254,7 +283,8 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     main_color VARCHAR(8) NOT NULL
                 );    
             CREATE UNIQUE INDEX IF NOT EXISTS uq_brands_user_phone ON brands(user_phone);
-                """)
+                """
+            )
 
         yield pool
     finally:

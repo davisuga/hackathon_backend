@@ -15,7 +15,8 @@ from agno.team.team import Team
 from agno.tools.whatsapp import WhatsAppTools
 from agno.utils.log import log_error, log_info, log_warning
 from agno.utils.whatsapp import get_media_async, send_image_message_async, typing_indicator_async, upload_media_async
-
+from src.veyra.workflow import run_generation_flow
+import asyncio
 
 
 from .security import validate_webhook_signature
@@ -236,6 +237,8 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
         parsed = json.loads(payload)
         conversation_id = parsed["conversation_id"]
         phone_numer = parsed["phone_number"]
+        storage = request.app.state.storage
+        await run_generation_flow(conversation_id, storage)
         # TODO: Include this message in the agent context
         await _send_whatsapp_message(phone_numer, "Estamos trabajando en potenciar tu negocio, en unos minutos te enviaremos el resultado.")
         print("Call ended!")

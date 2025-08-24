@@ -57,7 +57,7 @@ async def generate_call_link(agent: Agent):
     return f"https://veyra-frontend.vercel.app/?userId={user_id}"
 
 
-async def save_logo(agent: Agent) -> Optional[str]:
+async def save_logo(input, agent: Agent) -> Optional[str]:
     """
     This tools allows the agent to store the logo image, no parameters are required since
     the image is already in the context.
@@ -123,7 +123,7 @@ media_agent = Agent(
     memory=Memory(
         db=PostgresMemoryDb(
             table_name="agent_memories",
-            db_url=db_url, 
+            db_url=db_url,
             schema="public"
         )
     ),
