@@ -152,7 +152,7 @@ async def lifespan(app: FastAPI):
         storage = VeyraPostgresStorage(pool)
         app.state.storage = storage
         yield {"storage": storage}
-        renderer.stop()
+        await renderer.stop()
         
 
 app = whatsapp_app.get_app(lifespan=lifespan)
