@@ -1,8 +1,17 @@
+import asyncio
 from typing import Any, Awaitable, Callable
 
 import logfire
 from fastapi import HTTPException
 from pydantic import TypeAdapter
+
+from .img_gen import generate_image
+
+from .v0_client import (
+    ModelConfiguration,
+    CreateChatRequest,
+    V0ApiClient,
+)
 
 from .models import AutoMarketState, WorkflowStatus
 from .agents import (
@@ -16,9 +25,46 @@ from .agents import (
 from .persistence import PostgresStorage
 
 from typing import List, Tuple
+import os
 
 # Type alias for step handlers
 StepHandler = Callable[[str, Any, PostgresStorage], Awaitable[None]]
+client = V0ApiClient(api_key=os.getenv("V0_API_KEY") or "")
+
+
+async def _run_v0_page_step(
+    thread_id: str, workflow: AutoMarketState, storage: PostgresStorage
+) -> None:
+    """
+    Final step: push strategy/plan into v0.dev to create a hosted landing page.
+    """
+    user_number = await storage.get_number_by_thread_id(thread_id)
+    message = f"""
+        You are an expert conversion copywriter and landing page strategist. Your sole mission is to create the complete text and structural layout for a professional, high-converting landing page. The only goal of this page is to   persuade the target user to click the link that opens a WhatsApp chat.
+        user phone number: {user_number}
+        Analyze the provided briefing in detail:
+        ---
+        {workflow.briefing_md}
+        ---
+        """
+
+    async with client:
+        chat = await client.create_chat(
+            CreateChatRequest(
+                projectId=None,
+                message=message,
+                chatPrivacy="public",
+                modelConfiguration=ModelConfiguration(
+                    modelId="v0-gpt-5", imageGenerations=True, thinking=True,
+                ),
+                responseMode="sync",
+            )
+        )
+      
+        workflow.page_url = chat.demo
+
+        workflow.status = WorkflowStatus.HTML_COMPLETE
+        await storage.update_workflow(workflow)
 
 
 async def run_generation_flow(thread_id: str, storage: PostgresStorage) -> None:
@@ -50,7 +96,11 @@ async def run_generation_flow(thread_id: str, storage: PostgresStorage) -> None:
             WorkflowStatus.IMAGES_COMPLETE,
             _run_images_step,
         ),
-        (WorkflowStatus.IMAGES_COMPLETE, WorkflowStatus.HTML_COMPLETE, _run_html_step),
+        (
+            WorkflowStatus.IMAGES_COMPLETE,
+            WorkflowStatus.HTML_COMPLETE,
+            _run_v0_page_step,
+        ),
     ]
 
     # Execute steps starting from current status
@@ -101,25 +151,47 @@ calendar_events_ta = TypeAdapter(list[CalendarPost])
 async def _run_images_step(
     thread_id: str, workflow: AutoMarketState, storage: PostgresStorage
 ) -> None:
-    posts_with_images: list[tuple[CalendarPost, list[str]]] = []
-
     if not workflow.calendar_events:
         raise HTTPException(status_code=404, detail="Calendar events not found")
-    for post in calendar_events_ta.validate_json(str(workflow.calendar_events)):
-        image_prompts = await image_prompt_agent.run(f"""
-        date: {post.date}
-        title: {post.title}
-        description: {post.description}
-        """)
+    
+    calendar_posts = calendar_events_ta.validate_json(str(workflow.calendar_events))
+    master_prompt = await image_prompt_agent.run(workflow.briefing_md)
+    async def process_single_post(post: CalendarPost) -> CalendarPost:
+        """Process a single post to generate image prompts."""
+        image = await generate_image(f"""
+                                             {master_prompt}
+                                             title: {post.title}
+                                             description: {post.description}
+                                             """, resolution=post.resolution)
         print(
-            f"Image prompts created for thread {thread_id}, image_prompts={image_prompts.output}, post={post}"
+            f"Image prompts created for thread {thread_id}, image={image}, post={post}"
         )
-        posts_with_images.append((post, image_prompts.output))
-
+        if not image:
+            raise HTTPException(status_code=500, detail="Failed to generate image prompts")
+        post.image_url = image
+        return post
+    
+    # Run all image prompt generations concurrently
+    posts_with_images = await asyncio.gather(
+        *[process_single_post(post) for post in calendar_posts],
+        return_exceptions=True
+    )
+    
+    # Handle any exceptions that occurred during processing
+    successful_posts = []
+    for i, result in enumerate(posts_with_images):
+        if isinstance(result, Exception):
+            print(f"Error processing post {calendar_posts[i]}: {result}")
+            # You might want to handle this differently based on your requirements
+            # For now, we'll skip failed posts
+            continue
+        successful_posts.append(result)
+    
+    posts_with_images = successful_posts
+    workflow.calendar_events = posts_with_images
     # Store posts_with_images if needed for later steps
     workflow.status = WorkflowStatus.IMAGES_COMPLETE
     await storage.update_workflow(workflow)
-
 
 async def _run_html_step(
     thread_id: str, workflow: AutoMarketState, storage: PostgresStorage
