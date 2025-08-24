@@ -2,7 +2,6 @@ import base64
 from typing import TypedDict
 import uuid
 import os
-import asyncio
 import aioboto3
 from openai import AsyncOpenAI
 from google import genai

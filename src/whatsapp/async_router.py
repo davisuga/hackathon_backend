@@ -16,7 +16,6 @@ from agno.tools.whatsapp import WhatsAppTools
 from agno.utils.log import log_error, log_info, log_warning
 from agno.utils.whatsapp import get_media_async, send_image_message_async, typing_indicator_async, upload_media_async
 from src.veyra.workflow import run_generation_flow
-import asyncio
 
 
 from .security import validate_webhook_signature
