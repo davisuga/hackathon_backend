@@ -231,16 +231,17 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
         return brand
 
     @router.post("/call_ended")
-    async def call_ended(request: Request):
+    async def call_ended(request: Request, background_task: BackgroundTasks):
         # TODO get conversation 
         payload = await request.body()
         parsed = json.loads(payload)
         conversation_id = parsed["conversation_id"]
         phone_numer = parsed["phone_number"]
         storage = request.app.state.storage
-        await run_generation_flow(conversation_id, storage)
-        # TODO: Include this message in the agent context
         await _send_whatsapp_message(phone_numer, "Estamos trabajando en potenciar tu negocio, en unos minutos te enviaremos el resultado.")
+        
+        background_task.add_task(run_generation_flow, thread_id=conversation_id, storage=storage)
+        # TODO: Include this message in the agent context
         print("Call ended!")
 
 
