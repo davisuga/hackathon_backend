@@ -19,7 +19,7 @@ from src.veyra.persistence import Storage, db_pool
 import os
 from agno.agent import Agent
 
-from src.whatsapp import WhatsappAPI
+from src.whatsapp.app import WhatsappAPI
 from agno.models.openai import OpenAIChat
 from agno.models.google import Gemini
 import logging
