@@ -166,5 +166,5 @@ async def validation_exception_handler(request, exc: Exception):
     )
 
 if __name__ == "__main__":
-    whatsapp_app.serve(app="main:app", port=8000, reload=True)
+    whatsapp_app.serve(app="main:app", port=8000, reload=True, host="0.0.0.0")
 
