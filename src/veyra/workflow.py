@@ -9,6 +9,7 @@ from pydantic import TypeAdapter
 from .img_gen import generate_image
 
 from .v0_client import (
+    Attachment,
     ModelConfiguration,
     CreateChatRequest,
     V0ApiClient,
@@ -52,6 +53,7 @@ async def _run_v0_page_step(
         ---
         Create a landing page and leave no empty image placeholders.
         """
+    logo_url = brand_info.logo_url if brand_info else None
 
     async with client:
         chat = await client.create_chat(
@@ -65,6 +67,7 @@ async def _run_v0_page_step(
                     thinking=True,
                 ),
                 responseMode="sync",
+                attachments=[Attachment(url=logo_url)] if logo_url else None,
             )
         )
 
