@@ -32,6 +32,7 @@ from src.marketing.instructions import instructions
 from src.veyra.persistence import PostgresStorage as VeyraPostgresStorage
 
 from langfuse import get_client, observe
+from src.veyra.workflow import renderer
 import openlit
 import logging
 
@@ -153,6 +154,8 @@ async def lifespan(app: FastAPI):
         storage = VeyraPostgresStorage(pool)
         app.state.storage = storage
         yield {"storage": storage}
+        renderer.stop()
+        
 
 app = whatsapp_app.get_app(lifespan=lifespan)
 

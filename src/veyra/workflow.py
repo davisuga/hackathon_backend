@@ -52,7 +52,9 @@ async def _run_v0_page_step(
     brand_info = await storage.get_user_brand_by_thread_id(user_number)
 
     message = f"""
-        You are an expert conversion copywriter and landing page strategist. Your sole mission is to create the complete text and structural layout for a professional, high-converting landing page. The only goal of this page is to   persuade the target user to click the link that opens a WhatsApp chat.
+        You are an expert conversion copywriter and landing page strategist. Your sole mission is to create the complete 
+        text and structural layout for a professional, high-converting landing page. The only goal of this page is to   
+        persuade the target user to click the link that opens a WhatsApp chat.
         user brand info: {brand_info}
         user phone number: {user_number}
         Analyze the provided briefing in detail:
@@ -171,6 +173,8 @@ async def _run_calendar_step(
     print(f"Calendar created for thread {thread_id}, calendar={calendar.output}")
 
     workflow.calendar_events = calendar.output
+    for event in workflow.calendar_events:
+        event.image_url = None
     workflow.status = WorkflowStatus.CALENDAR_COMPLETE
     await storage.update_workflow(workflow)
 
