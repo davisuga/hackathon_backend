@@ -15,6 +15,8 @@ from .tools import orchestrator_agent, RunDependencies
 # Load environment variables and configure logging
 load_dotenv()
 logfire.configure(token=os.getenv("LOGFIRE_API_TOKEN"))
+logfire.instrument_httpx()
+logfire.instrument_asyncpg()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
