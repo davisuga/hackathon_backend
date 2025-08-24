@@ -90,7 +90,7 @@ async def upsert_brand_info_tool(brand_name: str, user_name: str, brand_color: s
     :param str logo_url: the public's logo url
     """
     user_phone = agent.user_id
-    brand = Brand(brand_name=brand_name, user_phone=user_phone, main_color=brand_color, brand_logo=logo_url, user_name=user_name)
+    brand = Brand(brand_name=brand_name, user_name=user_name, user_phone=user_phone, main_color=brand_color, brand_logo=logo_url)
     storage = await get_storage()
     await storage.upsert_brand(brand)
     print(brand)

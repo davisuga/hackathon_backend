@@ -223,6 +223,12 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
         await storage.insert_message(parsed)
         return payload
 
+    @router.get("/brands/{phone}")
+    async def get_brand_by_phone(phone: str, request: Request):
+        storage = request.app.state.storage
+        brand = await storage.get_brand_info(phone)
+        return brand
+
     @router.post("/call_ended")
     async def call_ended(request: Request):
         # TODO get conversation 

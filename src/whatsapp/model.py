@@ -14,5 +14,6 @@ class Message(BaseModel):
 class Brand(BaseModel):
     brand_name: str
     user_phone: str
+    user_name: str
     brand_logo: str
     main_color: str

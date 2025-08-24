@@ -48,6 +48,9 @@ class Storage:
     
     async def upsert_brand(self, brand: Brand) -> int:
         raise NotImplementedError
+    
+    async def get_brand_info(self, user_phone: str) -> dict:
+        raise NotImplementedError
 
 class PostgresStorage(Storage):
     """PostgreSQL implementation of the Storage interface."""
@@ -149,6 +152,17 @@ class PostgresStorage(Storage):
 
     ## End of Messages
     ## Brands
+
+    async def get_brand_info(self, user_phone):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM brands WHERE user_phone = $1", user_phone
+            )
+            if not row:
+                return None
+            return dict(row)
+    
+
     async def upsert_brand(self, brand: Brand) -> int:
         """
         Inserta o actualiza un registro en la tabla 'brands' basado en user_phone.
@@ -157,19 +171,21 @@ class PostgresStorage(Storage):
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                INSERT INTO brands (brand_name, user_phone, brand_logo, main_color)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO brands (brand_name, user_phone, brand_logo, main_color, user_name)
+                VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (user_phone) 
                 DO UPDATE SET
                     brand_name = EXCLUDED.brand_name,
                     brand_logo = EXCLUDED.brand_logo,
-                    main_color = EXCLUDED.main_color
+                    main_color = EXCLUDED.main_color,
+                    user_name = EXCLUDED.user_name
                 RETURNING brand_id
                 """,
                 brand.brand_name,
                 brand.user_phone,
                 brand.brand_logo,
                 brand.main_color,
+                brand.user_name
             )
             return row["brand_id"]
     ## End of Brands
@@ -219,6 +235,7 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     brand_name VARCHAR(48) NOT NULL,
                     brand_logo TEXT NOT NULL,
                     user_phone VARCHAR(16) NOT NULL,
+                    user_name VARCHAR(32),
                     main_color VARCHAR(8) NOT NULL
                 );    
             CREATE UNIQUE INDEX IF NOT EXISTS uq_brands_user_phone ON brands(user_phone);
