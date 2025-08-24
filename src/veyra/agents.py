@@ -14,7 +14,7 @@ if not key:
 
 provider = OpenRouterProvider(api_key=key)
 writer_model = OpenAIModel(
-    "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-lite",
     provider=provider,
 )
 
@@ -26,14 +26,14 @@ coder_model = OpenAIModel(
 briefing_agent = Agent(
     writer_model,
     output_type=str,
-    instructions="You are an expert project manager. Read the conversation transcript and distill it into a concise marketing briefing in Markdown format. Cover the product name, target audience, key features, and marketing tone.",
+    instructions="You are an expert project manager. Read the conversation transcript and distill it into a concise marketing briefing in Markdown format. Cover the product name, target audience, key features, and marketing tone. IMPORTANT: Maintain the same language as the input conversation.",
 )
 # To prioritize Cerebras and allow fallback:
 # A specialized agent to create a marketing strategy and plan
 strategy_agent = Agent(
     writer_model,
     output_type=str,
-    instructions="You are a senior marketing strategist. Based on the provided briefing, create a high-level marketing strategy. Format the entire output as a single Markdown document.",
+    instructions="You are a senior marketing strategist. Based on the provided briefing, create a high-level marketing strategy. Format the entire output as a single Markdown document. IMPORTANT: Maintain the same language as the input briefing.",
 )
 
 calendar_agent = Agent(
@@ -46,6 +46,7 @@ calendar_agent = Agent(
     feed,1200x900
     story,1080x1920
     post,1080x1080
+    IMPORTANT: Maintain the same language as the input strategy.
     """,
 )
 
@@ -140,7 +141,8 @@ A real man (age 40–55) in a warm, naturally lit herbal garden or backyard well
 A trustworthy, editorial-style moment of morning wellness. Natural, minimalistic, and aligned with PuraFit’s balance of science and nature.
 
 </example>
-    You are a prompt engineer. Generate 1 prompt for an image model based on user briefing. The goal is to create an image for a social media post. It must be generic to any post from that brand""",
+    You are a prompt engineer. Generate 1 prompt for an image model based on user briefing. The goal is to create an image for a social media post. It must be generic to any post from that brand. IMPORTANT: Maintain the same language as the input calendar.
+""",
 )
 
 # A specialized agent to generate the final landing page HTML
@@ -155,5 +157,6 @@ html_agent = Agent(
         - Create sections for a hero banner, key features, and a call-to-action.
         - Ensure the final output is a single block of valid HTML code, starting with `<!DOCTYPE html>` and ending with `<:html>`.
         - Do not include any markdown formatting like ```html in your response.
+        IMPORTANT: Maintain the same language as the input briefing.
     """),
 )
