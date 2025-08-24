@@ -10,6 +10,8 @@ import logfire
 from fastapi import HTTPException
 from pydantic import TypeAdapter
 
+from src.marketing.template_renderer import RenderService
+
 from .img_gen import generate_image
 
 from .v0_client import (
@@ -19,7 +21,7 @@ from .v0_client import (
     V0ApiClient,
 )
 
-from .models import AutoMarketState, WorkflowStatus
+from .models import AutoMarketState, BrandInfo, WorkflowStatus
 from .agents import (
     CalendarPost,
     briefing_agent,
@@ -38,7 +40,7 @@ StepHandler = Callable[[str, Any, PostgresStorage], Awaitable[None]]
 client = V0ApiClient(api_key=os.getenv("V0_API_KEY") or "")
 
 wpp = WhatsAppTools()
-
+renderer = RenderService("templates")
 
 async def _run_v0_page_step(
     thread_id: str, workflow: AutoMarketState, storage: PostgresStorage
@@ -50,7 +52,9 @@ async def _run_v0_page_step(
     brand_info = await storage.get_user_brand_by_thread_id(user_number)
 
     message = f"""
-        You are an expert conversion copywriter and landing page strategist. Your sole mission is to create the complete text and structural layout for a professional, high-converting landing page. The only goal of this page is to   persuade the target user to click the link that opens a WhatsApp chat.
+        You are an expert conversion copywriter and landing page strategist. Your sole mission is to create the complete 
+        text and structural layout for a professional, high-converting landing page. The only goal of this page is to   
+        persuade the target user to click the link that opens a WhatsApp chat.
         user brand info: {brand_info}
         user phone number: {user_number}
         Analyze the provided briefing in detail:
@@ -169,12 +173,23 @@ async def _run_calendar_step(
     print(f"Calendar created for thread {thread_id}, calendar={calendar.output}")
 
     workflow.calendar_events = calendar.output
+    for event in workflow.calendar_events:
+        event.image_url = None
     workflow.status = WorkflowStatus.CALENDAR_COMPLETE
     await storage.update_workflow(workflow)
 
 
 calendar_events_ta = TypeAdapter(list[CalendarPost])
 
+
+async def _render_post(calendar_post: CalendarPost, brand_info: BrandInfo):
+    post = await renderer.render_to_png("post", {
+        "main_text": calendar_post.title,
+        "secondary_text": calendar_post.description,
+        "accent_color": brand_info.main_color,
+        "image": calendar_post.image_url
+    })
+    return post
 
 def _make_run_images_step(number: str):
     async def _run_images_step(
@@ -185,38 +200,28 @@ def _make_run_images_step(number: str):
 
         calendar_posts = calendar_events_ta.validate_json(str(workflow.calendar_events))
         master_prompt = await image_prompt_agent.run(workflow.briefing_md)
+        user_number = await storage.get_number_by_thread_id(thread_id)
+        brand_info = await storage.get_user_brand_by_thread_id(user_number)
 
         async def process_single_post(post: CalendarPost) -> CalendarPost:
             """Process a single post to generate image prompts."""
             try:
-                image = await generate_image(
-                    f"""
-                    {master_prompt}
-                    title: {post.title}
-                    description: {post.description}""",
-                    resolution=post.resolution,
-                )
-                print(
-                    f"Image prompts created for thread {thread_id}, image={image}, post={post}"
-                )
-                if not image:
-                    raise HTTPException(
-                        status_code=500, detail="Failed to generate image prompts"
+                if post.image_url is None:
+                    image = await generate_image(
+                        f"""
+                        {master_prompt}
+                        title: {post.title}
+                        description: {post.description}""",
+                        resolution=post.resolution,
                     )
-                
-                # Check if image is a dict or bytes
-                if isinstance(image, dict):
+                    if not image or not image['image_url']:
+                        raise Exception("Failed to generate image prompts")
                     post.image_url = image["image_url"]
-                    image_bytes = image["image_bytes"]
-                else:
-                    # If it's bytes, we have an error in generate_image
-                    raise HTTPException(
-                        status_code=500, detail="Image generation returned invalid format"
-                    )
-                    
+                
+                post_bytes = await _render_post(post, brand_info)
                 media_id = await upload_media_async(
-                    image_bytes,
-                    mime_type="image/jpeg",
+                    post_bytes.getbuffer(),
+                    mime_type="image/png",
                     filename=f"{post.title.replace(' ', '_')}.jpg"
                 )
                 print(media_id)

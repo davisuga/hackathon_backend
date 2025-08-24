@@ -455,12 +455,14 @@ calendar_agent = Agent(
     output_type=list[CalendarPost],
     instructions="""
 
-    You are a senior marketing strategist. Create a detailed 1-week content calendar for posts in instagram. you need to specify if it is for feed, story, or post.
+    You are a senior marketing strategist. Create a detailed 1-week content calendar for posts in instagram. 
+    you need to specify if it is for feed, story, or post.
     
     type,resolution
     feed,1200x900
     story,1080x1920
     post,1080x1080
+
     IMPORTANT: Maintain the same language as the input strategy.
     """,
 )

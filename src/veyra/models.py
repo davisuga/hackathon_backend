@@ -7,8 +7,17 @@ from typing import List, Optional
 from datetime import datetime
 class CalendarPost(BaseModel):
     date: datetime
+    """
+    Date when the post should be published
+    """
     title: str
+    """
+    Short title for the post, make it up to 10 words, shord and catchy. Ready to be presented.
+    """
     description: str
+    """
+     A longer text to emphatize title's text
+    """
     resolution: str
     image_url: Optional[str]
     

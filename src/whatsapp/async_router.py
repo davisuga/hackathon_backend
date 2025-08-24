@@ -16,12 +16,20 @@ from agno.tools.whatsapp import WhatsAppTools
 from agno.utils.log import log_error, log_info, log_warning
 from agno.utils.whatsapp import get_media_async, send_image_message_async, typing_indicator_async, upload_media_async
 from src.veyra.workflow import run_generation_flow
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from pathlib import Path
 
 
 from .security import validate_webhook_signature
 
 from langfuse import get_client
 langfuse = get_client()
+# --- Configuración Jinja2 ---
+templates_dir = Path("templates")
+env = Environment(
+    loader=FileSystemLoader(str(templates_dir)),
+    autoescape=select_autoescape(["html", "xml"])
+)
 
 
 def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None, session_state_loader: Optional[Callable[[str], Awaitable[dict]]] = None) -> APIRouter:
@@ -106,7 +114,7 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
                 try:
                     message_text = message["image"]["caption"]
                 except Exception:
-                    message_text = "Describe the image"
+                    message_text = "Esta es una imagen subida por el usuario"
                 message_image = message["image"]["id"]
             elif message.get("type") == "video":
                 try:

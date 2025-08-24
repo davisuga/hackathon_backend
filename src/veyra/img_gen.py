@@ -104,6 +104,6 @@ async def generate_image(
     except Exception as e:
         print(f"Error generating image: {e}")
         # Return a default image in case of failure
-        with open('./image.png', 'rb') as f:
+        with open('./image.jpg', 'rb') as f:
             image_bytes = f.read()
         return {"image_url": await upload_to_s3(image_bytes), "image_bytes": image_bytes}
