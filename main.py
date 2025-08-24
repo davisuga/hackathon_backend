@@ -36,8 +36,16 @@ def generate_call_link(agent: Agent):
     user_id = agent.user_id
     return f"https://prueba.com/{user_id}"
 
-def save_logo(agent: Agent):
-    pass
+
+def save_logo(agent: Agent) -> bool:
+    """
+    This tools allows the agent to store the logo image, no parameters are required since
+    the image is already in the context.
+    """
+    image = agent.session_state.get("__image_path", None)
+    if not image:
+        return False
+    return True
 
 
 media_agent = Agent(
@@ -49,7 +57,7 @@ media_agent = Agent(
     goal=goal,
 
     model=Gemini(id="gemini-2.0-flash"),
-    tools=[generate_call_link],
+    tools=[generate_call_link, save_logo],
     show_tool_calls=True,
     enable_session_summaries=True,
 

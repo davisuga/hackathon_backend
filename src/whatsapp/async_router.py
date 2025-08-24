@@ -1,4 +1,6 @@
 import base64
+
+from src.utils import save_media_bytes_to_temp
 from .model import Message
 from os import getenv
 from typing import Optional, Callable, Awaitable
@@ -140,7 +142,8 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
                     )
                 content = await get_media_async(message_image) if message_image else None
                 if content:
-                    pass
+                    image_path = await save_media_bytes_to_temp(content)
+                    session_state["__image_path"] = image_path
                 image = [Image(content=content)] if message_image else None
                 
                 
