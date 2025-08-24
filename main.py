@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import Optional
+import asyncpg
 from dotenv.main import load_dotenv
 from fastapi.responses import JSONResponse
 from pathlib import Path
@@ -14,7 +15,7 @@ from src.whatsapp.model import Brand
 from src.veyra.img_gen import upload_to_s3
 
 from fastapi import FastAPI
-from src.veyra.persistence import db_pool
+from src.veyra.persistence import Storage, db_pool
 import os
 from agno.agent import Agent
 
@@ -34,13 +35,21 @@ from langfuse import get_client, observe
 import openlit
 
 langfuse = get_client()
+agent_storage = None
 openlit.init(tracer=langfuse._otel_tracer, disable_batch=True, application_name="zeropipol")
 
 db_url = os.environ['POSTGRES_URL']
 
 logger = logging.getLogger(__name__)
 
-def generate_call_link(agent: Agent):
+async def get_storage() -> Storage:
+    global agent_storage
+    if agent_storage is None:
+        pool = await asyncpg.create_pool(dsn=db_url)
+        agent_storage = VeyraPostgresStorage(pool)
+    return agent_storage
+
+async def generate_call_link(agent: Agent):
     """
     This tool generates a link after the user's setup.
     """
@@ -80,10 +89,11 @@ async def upsert_brand_info_tool(brand_name: str, user_name: str, brand_color: s
     ambar, naranja, naranja_profundo, cafe, azul_grisaceo.
     :param str logo_url: the public's logo url
     """
-    print("Saving brand's info")
     user_phone = agent.user_id
-    brand = Brand(brand_name=brand_name, user_phone=user_phone, brand_color=brand_color, logo_url=logo_url, user_name=user_name)
-    await upsert_brand(brand)
+    brand = Brand(brand_name=brand_name, user_phone=user_phone, main_color=brand_color, brand_logo=logo_url, user_name=user_name)
+    storage = await get_storage()
+    await storage.upsert_brand(brand)
+    print(brand)
 
 
 

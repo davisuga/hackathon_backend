@@ -149,29 +149,29 @@ class PostgresStorage(Storage):
 
     ## End of Messages
     ## Brands
-        async def upsert_brand(self, brand: Brand) -> int:
-            """
-            Inserta o actualiza un registro en la tabla 'brands' basado en user_phone.
-            Devuelve el brand_id final.
-            """
-            async with self.pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """
-                    INSERT INTO brands (brand_name, user_phone, brand_logo, main_color)
-                    VALUES ($1, $2, $3, $4)
-                    ON CONFLICT (user_phone) 
-                    DO UPDATE SET
-                        brand_name = EXCLUDED.brand_name,
-                        brand_logo = EXCLUDED.brand_logo,
-                        main_color = EXCLUDED.main_color
-                    RETURNING brand_id
-                    """,
-                    brand.brand_name,
-                    brand.user_phone,
-                    brand.brand_logo,
-                    brand.main_color,
-                )
-                return row["brand_id"]
+    async def upsert_brand(self, brand: Brand) -> int:
+        """
+        Inserta o actualiza un registro en la tabla 'brands' basado en user_phone.
+        Devuelve el brand_id final.
+        """
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO brands (brand_name, user_phone, brand_logo, main_color)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (user_phone) 
+                DO UPDATE SET
+                    brand_name = EXCLUDED.brand_name,
+                    brand_logo = EXCLUDED.brand_logo,
+                    main_color = EXCLUDED.main_color
+                RETURNING brand_id
+                """,
+                brand.brand_name,
+                brand.user_phone,
+                brand.brand_logo,
+                brand.main_color,
+            )
+            return row["brand_id"]
     ## End of Brands
 
 @asynccontextmanager
@@ -221,6 +221,7 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
                     user_phone VARCHAR(16) NOT NULL,
                     main_color VARCHAR(8) NOT NULL
                 );    
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_brands_user_phone ON brands(user_phone);
                 """)
 
         yield pool
