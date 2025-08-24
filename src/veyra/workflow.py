@@ -90,7 +90,9 @@ async def run_generation_flow(thread_id: str, storage: PostgresStorage) -> None:
             "Workflow not found for thread {thread_id}, creating workflow",
             thread_id=thread_id,
         )
-        raise HTTPException(status_code=404, detail="Workflow not found")
+        conversation = await storage.get_conversation(thread_id=thread_id)
+        workflow = await storage.create_workflow(thread_id=thread_id, transcript=conversation)
+        # raise HTTPException(status_code=404, detail="Workflow not found")
 
     print(f"Running generation flow for thread {thread_id}")
 
