@@ -220,6 +220,18 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
         await storage.insert_message(parsed)
         return payload
 
+    @router.post("/call_ended")
+    async def call_ended(request: Request):
+        # TODO get conversation 
+        payload = await request.body()
+        parsed = json.loads(payload)
+        conversation_id = parsed["conversation_id"]
+        phone_numer = parsed["phone_number"]
+        # TODO: Include this message in the agent context
+        await _send_whatsapp_message(phone_numer, "Estamos trabajando en potenciar tu negocio, en unos minutos te enviaremos el resultado.")
+        print("Call ended!")
+
+
     async def _send_whatsapp_message(recipient: str, message: str, italics: bool = False):
         langfuse.update_current_span(output={"text": message[:128]})
         if len(message) <= 4096:
