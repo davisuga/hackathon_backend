@@ -1,7 +1,6 @@
 import base64
 import uuid
 import os
-from typing import Optional
 import asyncio
 import aioboto3
 from openai import AsyncOpenAI
@@ -39,9 +38,8 @@ async def generate_openai(prompt: str, resolution: str = "1024x1024") -> bytes:
 
 async def generate_gemini(prompt: str, resolution: str = "1024x1024") -> bytes:
     """Generate image bytes using Gemini Imagen API."""
-
     response = gemini_client.models.generate_images(
-        model="imagen-4.0-generate-001",
+        model="imagen-3.0-fast-generate-001",
         prompt=prompt,
     )
     if not response.generated_images:
@@ -80,7 +78,7 @@ async def generate_image(
     if engine == "openai":
         image_bytes = await generate_openai(prompt, resolution)
     elif engine == "gemini":
-        image_bytes = await generate_gemini(prompt, resolution)
+        image_bytes = await generate_gemini(prompt+"\n resolution: "+resolution)
     else:
         raise ValueError(f"Unknown engine: {engine}")
 

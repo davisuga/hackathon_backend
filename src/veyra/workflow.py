@@ -34,6 +34,8 @@ StepHandler = Callable[[str, Any, PostgresStorage], Awaitable[None]]
 client = V0ApiClient(api_key=os.getenv("V0_API_KEY") or "")
 
 wpp = WhatsAppTools()
+
+
 async def _run_v0_page_step(
     thread_id: str, workflow: AutoMarketState, storage: PostgresStorage
 ) -> None:
@@ -50,6 +52,10 @@ async def _run_v0_page_step(
         Analyze the provided briefing in detail:
         ---
         {workflow.briefing_md}
+        ---
+        And the strategy:
+        ---
+        {workflow.strategy_and_plan_md}
         ---
         Create a landing page and leave no empty image placeholders.
         """
