@@ -9,6 +9,9 @@ class CalendarPost(BaseModel):
     date: datetime
     title: str
     description: str
+    resolution: str
+    image_url: Optional[str]
+    
 
 class WorkflowStatus(StrEnum):
     """Represents the current stage of the landing page generation workflow."""

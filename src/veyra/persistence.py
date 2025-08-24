@@ -41,14 +41,21 @@ class Storage:
 
     async def insert_message(self, message: Message):
         raise NotImplementedError
-
+    async def get_number_by_thread_id(
+        self, thread_id:str
+    )-> str:
+        raise NotImplementedError
 
 class PostgresStorage(Storage):
     """PostgreSQL implementation of the Storage interface."""
 
     def __init__(self, pool: asyncpg.Pool):
         self.pool = pool
-
+    async def get_number_by_thread_id(self, thread_id:str)-> str:
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval(
+                "SELECT phone_number FROM messages WHERE thread_id = $1 limit 1", thread_id
+            )
     async def get_workflow(self, thread_id: str) -> AutoMarketState | None:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
