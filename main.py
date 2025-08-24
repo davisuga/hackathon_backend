@@ -33,7 +33,9 @@ from src.veyra.persistence import PostgresStorage as VeyraPostgresStorage
 
 from langfuse import get_client, observe
 import openlit
+import logging
 
+logger = logging.getLogger(__name__)
 langfuse = get_client()
 agent_storage = None
 openlit.init(tracer=langfuse._otel_tracer, disable_batch=True, application_name="zeropipol")
@@ -154,6 +156,7 @@ app = whatsapp_app.get_app(lifespan=lifespan)
 
 @app.exception_handler(Exception)
 async def validation_exception_handler(request, exc: Exception):
+    logger.error(f"Uncaught error {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"message": str(exc)},
@@ -161,3 +164,4 @@ async def validation_exception_handler(request, exc: Exception):
 
 if __name__ == "__main__":
     whatsapp_app.serve(app="main:app", port=8000, reload=True)
+
