@@ -1,16 +1,21 @@
 from contextlib import asynccontextmanager
 from typing import Optional
+import asyncpg
 from dotenv.main import load_dotenv
 from fastapi.responses import JSONResponse
+from pathlib import Path
 
 from src.utils import color_a_hex
 load_dotenv()
+
+from src.whatsapp.model import Brand
+
 
 
 from src.veyra.img_gen import upload_to_s3
 
 from fastapi import FastAPI
-from src.veyra.persistence import db_pool
+from src.veyra.persistence import Storage, db_pool
 import os
 from agno.agent import Agent
 
@@ -22,7 +27,7 @@ import logging
 from agno.memory.v2 import Memory
 from agno.storage.postgres import PostgresStorage
 from agno.memory.v2.db.postgres import PostgresMemoryDb
-from src.marketing.instructions import instructions, goal
+from src.marketing.instructions import instructions
 
 from src.veyra.persistence import PostgresStorage as VeyraPostgresStorage
 
@@ -30,18 +35,26 @@ from langfuse import get_client, observe
 import openlit
 
 langfuse = get_client()
+agent_storage = None
 openlit.init(tracer=langfuse._otel_tracer, disable_batch=True, application_name="zeropipol")
 
 db_url = os.environ['POSTGRES_URL']
 
 logger = logging.getLogger(__name__)
 
-def generate_call_link(agent: Agent):
+async def get_storage() -> Storage:
+    global agent_storage
+    if agent_storage is None:
+        pool = await asyncpg.create_pool(dsn=db_url)
+        agent_storage = VeyraPostgresStorage(pool)
+    return agent_storage
+
+async def generate_call_link(agent: Agent):
     """
     This tool generates a link after the user's setup.
     """
     user_id = agent.user_id
-    return f"https://prueba.com/{user_id}"
+    return f"https://veyra-frontend.vercel.app/?userId={user_id}"
 
 
 async def save_logo(agent: Agent) -> Optional[str]:
@@ -52,10 +65,18 @@ async def save_logo(agent: Agent) -> Optional[str]:
     image = agent.session_state.get("__image_path", None)
     if not image:
         return None
-    file_path = await upload_to_s3(image)
-    return file_path
+    
+    path = Path(image)
+    if not path.exists():
+        raise FileNotFoundError(f"No se encontró el archivo {file_path}")
 
-def upsert_brand_info(brand_name: str, user_name: str, brand_color: str, agent: Agent):
+    # Leer bytes
+    with open(path, "rb") as f:
+        data = f.read()
+        file_path = await upload_to_s3(data)
+        return file_path
+
+async def upsert_brand_info_tool(brand_name: str, user_name: str, brand_color: str, logo_url: str, agent: Agent):
     """
     Updates the current user's brand info with the provided information. This took should be
     invoked after the user have saved their logo, please don't call this tool before
@@ -66,8 +87,13 @@ def upsert_brand_info(brand_name: str, user_name: str, brand_color: str, agent: 
     gris, rojo, rosa, purpura, violeta, indigo,
     azul, celeste, cian, teal, verde, verde_claro, lima, amarillo,
     ambar, naranja, naranja_profundo, cafe, azul_grisaceo.
+    :param str logo_url: the public's logo url
     """
-    print("Saving brand's info")
+    user_phone = agent.user_id
+    brand = Brand(brand_name=brand_name, user_name=user_name, user_phone=user_phone, main_color=brand_color, brand_logo=logo_url)
+    storage = await get_storage()
+    await storage.upsert_brand(brand)
+    print(brand)
 
 
 
@@ -77,11 +103,9 @@ media_agent = Agent(
     instructions=instructions,
     add_name_to_instructions=True,
 
-    goal=goal,
-
     # model=Gemini(id="gemini-2.0-flash"),
     model=OpenAIChat(),
-    tools=[generate_call_link, save_logo, color_a_hex],
+    tools=[generate_call_link, save_logo, color_a_hex, upsert_brand_info_tool],
     show_tool_calls=True,
     enable_session_summaries=True,
 
