@@ -33,26 +33,18 @@ async def health_check():
     return {"status": "ok"}
 
 @app.post("/")
-async def run_automarket_agent(body: RunRequestBody, request: Request) -> Response:
+async def run_automarket_agent(request: Request) -> None:
     """Main AG-UI endpoint."""
     storage: PostgresStorage = request.state.storage
-    thread_id = body.thread_id or "default"
 
-    workflow = await storage.get_workflow(thread_id)
-    if not workflow:
-        if not body.messages or not body.messages[0].parts:
-            return Response("Initial message is empty", status_code=400)
-        first_message = body.messages[0].parts[0].text
-        workflow = await storage.create_workflow(thread_id, first_message)
+    # Let handle_ag_ui_request parse the body. We parse it here first
+    # to get the thread_id and initialize the workflow state.
+    body = await request.json()
+    thread_id = body.get("thread_id", "default")
+    logfire.info("Received request for thread {thread_id}", thread_id=thread_id)
     
-    # Create dependencies for this specific run
-    run_deps = RunDependencies(thread_id=thread_id, storage=storage)
+    await run_generation_flow(thread_id, storage)
 
-    return await handle_ag_ui_request(
-        agent=orchestrator_agent,
-        request=request,
-        deps=run_deps,
-    )
 
 @app.get("/pages/{thread_id}", response_class=HTMLResponse)
 async def get_landing_page(thread_id: str, request: Request):

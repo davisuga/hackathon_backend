@@ -124,11 +124,11 @@ async def run_generation_flow(thread_id: str, storage: PostgresStorage) -> None:
             WorkflowStatus.IMAGES_COMPLETE,
             _make_run_images_step(number=user_number),
         ),
-        # (
-        #     WorkflowStatus.IMAGES_COMPLETE,
-        #     WorkflowStatus.HTML_COMPLETE,
-        #     _run_v0_page_step,
-        # ),
+        (
+            WorkflowStatus.IMAGES_COMPLETE,
+            WorkflowStatus.HTML_COMPLETE,
+            _run_v0_page_step,
+        ),
     ]
 
     # Execute steps starting from current status
