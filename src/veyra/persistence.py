@@ -10,7 +10,7 @@ from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
 from .agents import CalendarPost
 
-from src.whatsapp.model import Message
+from src.whatsapp.model import Message, Brand
 
 from .models import AutoMarketState, WorkflowStatus
 
@@ -44,6 +44,9 @@ class Storage:
     async def get_number_by_thread_id(
         self, thread_id:str
     )-> str:
+        raise NotImplementedError
+    
+    async def upsert_brand(self, brand: Brand) -> int:
         raise NotImplementedError
 
 class PostgresStorage(Storage):
@@ -146,7 +149,29 @@ class PostgresStorage(Storage):
 
     ## End of Messages
     ## Brands
-
+        async def upsert_brand(self, brand: Brand) -> int:
+            """
+            Inserta o actualiza un registro en la tabla 'brands' basado en user_phone.
+            Devuelve el brand_id final.
+            """
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO brands (brand_name, user_phone, brand_logo, main_color)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (user_phone) 
+                    DO UPDATE SET
+                        brand_name = EXCLUDED.brand_name,
+                        brand_logo = EXCLUDED.brand_logo,
+                        main_color = EXCLUDED.main_color
+                    RETURNING brand_id
+                    """,
+                    brand.brand_name,
+                    brand.user_phone,
+                    brand.brand_logo,
+                    brand.main_color,
+                )
+                return row["brand_id"]
     ## End of Brands
 
 @asynccontextmanager
@@ -192,6 +217,7 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
               CREATE TABLE IF NOT EXISTS brands (
                     brand_id SERIAL PRIMARY KEY,
                     brand_name VARCHAR(48) NOT NULL,
+                    brand_logo TEXT NOT NULL,
                     user_phone VARCHAR(16) NOT NULL,
                     main_color VARCHAR(8) NOT NULL
                 );    

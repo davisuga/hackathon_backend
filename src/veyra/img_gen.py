@@ -56,7 +56,7 @@ async def upload_to_s3(image_bytes: bytes, ext: str = "png") -> str:
     async with session.resource(
         "s3",
         region_name=REGION_NAME,
-        endpoint_url=ENDPOINT_URL,
+        endpoint_url=f"{ENDPOINT_URL}/s3",
         aws_access_key_id=ACCESS_KEY,
         aws_secret_access_key=SECRET_KEY,
     ) as s3:
@@ -68,7 +68,7 @@ async def upload_to_s3(image_bytes: bytes, ext: str = "png") -> str:
             ContentType=f"image/{ext}",
         )
 
-    return f"{ENDPOINT_URL}/{BUCKET_NAME}/{filename}"
+    return f"{ENDPOINT_URL}/object/public/{BUCKET_NAME}/{filename}"
 
 
 async def generate_image(

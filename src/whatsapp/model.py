@@ -11,4 +11,8 @@ class Message(BaseModel):
     role: str
 
 
-
+class Brand(BaseModel):
+    brand_name: str
+    user_phone: str
+    brand_logo: str
+    main_color: str

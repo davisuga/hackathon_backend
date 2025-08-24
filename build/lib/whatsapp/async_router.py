@@ -118,6 +118,8 @@ def get_async_router(agent: Optional[Agent] = None, team: Optional[Team] = None,
                 return
 
             phone_number = message["from"]
+            if not phone_number:
+                return
             session_id = f"{phone_number}@whatsapp"
             log_info(f"Processing message from {phone_number}: {message_text}")
 
