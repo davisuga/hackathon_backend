@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any, Awaitable, Callable
 
+from agno.tools.whatsapp import WhatsAppTools
 import logfire
 from fastapi import HTTPException
 from pydantic import TypeAdapter
@@ -8,6 +9,7 @@ from pydantic import TypeAdapter
 from .img_gen import generate_image
 
 from .v0_client import (
+    Attachment,
     ModelConfiguration,
     CreateChatRequest,
     V0ApiClient,
@@ -31,6 +33,8 @@ import os
 StepHandler = Callable[[str, Any, PostgresStorage], Awaitable[None]]
 client = V0ApiClient(api_key=os.getenv("V0_API_KEY") or "")
 
+wpp = WhatsAppTools()
+
 
 async def _run_v0_page_step(
     thread_id: str, workflow: AutoMarketState, storage: PostgresStorage
@@ -39,14 +43,23 @@ async def _run_v0_page_step(
     Final step: push strategy/plan into v0.dev to create a hosted landing page.
     """
     user_number = await storage.get_number_by_thread_id(thread_id)
+    brand_info = await storage.get_user_brand_by_thread_id(user_number)
+
     message = f"""
         You are an expert conversion copywriter and landing page strategist. Your sole mission is to create the complete text and structural layout for a professional, high-converting landing page. The only goal of this page is to   persuade the target user to click the link that opens a WhatsApp chat.
+        user brand info: {brand_info}
         user phone number: {user_number}
         Analyze the provided briefing in detail:
         ---
         {workflow.briefing_md}
         ---
+        And the strategy:
+        ---
+        {workflow.strategy_and_plan_md}
+        ---
+        Create a landing page and leave no empty image placeholders.
         """
+    logo_url = brand_info.logo_url if brand_info else None
 
     async with client:
         chat = await client.create_chat(
@@ -55,17 +68,20 @@ async def _run_v0_page_step(
                 message=message,
                 chatPrivacy="public",
                 modelConfiguration=ModelConfiguration(
-                    modelId="v0-gpt-5", imageGenerations=True, thinking=True,
+                    modelId="v0-gpt-5",
+                    imageGenerations=True,
+                    thinking=True,
                 ),
                 responseMode="sync",
+                attachments=[Attachment(url=logo_url)] if logo_url else None,
             )
         )
-      
+
         workflow.page_url = chat.demo
 
         workflow.status = WorkflowStatus.HTML_COMPLETE
         await storage.update_workflow(workflow)
-
+        await wpp.send_text_message_async(recipient=user_number, text="¡Listo! Tu landing page está lista. Puedes verla en el siguiente enlace: " + chat.demo)
 
 async def run_generation_flow(thread_id: str, storage: PostgresStorage) -> None:
     workflow = await storage.get_workflow(thread_id)

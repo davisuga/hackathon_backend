@@ -12,7 +12,7 @@ from .agents import CalendarPost
 
 from src.whatsapp.model import Message, Brand
 
-from .models import AutoMarketState, WorkflowStatus
+from .models import AutoMarketState, BrandInfo, WorkflowStatus
 
 DB_URL = os.getenv("POSTGRES_URL")
 assert DB_URL, "POSTGRES_URL environment variable not set."
@@ -45,6 +45,11 @@ class Storage:
         self, thread_id:str
     )-> str:
         raise NotImplementedError
+    async def get_user_brand_by_phone(
+        self, phone:str
+    )-> BrandInfo | None:
+        raise NotImplementedError
+    
     
     async def upsert_brand(self, brand: Brand) -> int:
         raise NotImplementedError
@@ -57,6 +62,16 @@ class PostgresStorage(Storage):
 
     def __init__(self, pool: asyncpg.Pool):
         self.pool = pool
+    async def get_user_brand_by_thread_id(
+        self, phone:str
+    )-> BrandInfo | None:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM brands WHERE user_phone = $1 limit 1", phone
+            )
+            if not row:
+                return None
+            return BrandInfo(**row)
     async def get_number_by_thread_id(self, thread_id:str)-> str:
         async with self.pool.acquire() as conn:
             return await conn.fetchval(
