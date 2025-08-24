@@ -51,3 +51,11 @@ class Message(BaseModel):
 class RunRequestBody(BaseModel):
     thread_id: Optional[str] = None
     messages: List[Message]
+
+
+class BrandInfo(BaseModel):
+    brand_id: Optional[int] = None
+    brand_name: Optional[str] = None
+    user_phone: Optional[str] = None
+    main_color: Optional[str] = None
+    logo_url: Optional[str] = None
