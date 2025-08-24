@@ -247,7 +247,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    import asyncio
 
     # To run this example, you would need to uncomment the following line
     # and provide a valid API key.

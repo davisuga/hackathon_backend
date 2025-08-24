@@ -1,5 +1,4 @@
 import tempfile
-from typing import Union
 
 async def save_media_bytes_to_temp(media: bytes, suffix: str = ".bin") -> str:
     """

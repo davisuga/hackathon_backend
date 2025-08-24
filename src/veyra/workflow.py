@@ -65,7 +65,7 @@ async def _run_v0_page_step(
         ---
         {workflow.strategy_and_plan_md}
         ---
-        Create a landing page and leave no empty image placeholders.
+        You must create a minimalistic, modern yet bold landing page and leave no empty image placeholders.
         """
     logo_url = brand_info.logo_url if brand_info else None
 
@@ -104,6 +104,9 @@ async def run_generation_flow(thread_id: str, storage: PostgresStorage) -> None:
             thread_id=thread_id,
         )
         conversation = await storage.get_conversation(thread_id=thread_id)
+        if conversation is None or len(conversation) == 0:
+            print(f"[ERROR]: No conversation text for thread id: {thread_id}")
+            return
         workflow = await storage.create_workflow(thread_id=thread_id, transcript=conversation)
         # raise HTTPException(status_code=404, detail="Workflow not found")
 
@@ -226,7 +229,7 @@ def _make_run_images_step(number: str):
                 )
                 print(media_id)
                 await send_image_message_async(
-                    media_id=media_id,
+                    media_id=str(media_id),
                     recipient=number,
                 )
                 print("Image sent successfully")
