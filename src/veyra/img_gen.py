@@ -1,6 +1,7 @@
 import base64
 import uuid
 import os
+from typing import Optional
 import asyncio
 import aioboto3
 from openai import AsyncOpenAI

@@ -1,9 +1,13 @@
 from contextlib import asynccontextmanager
+from typing import Optional
 from dotenv.main import load_dotenv
 from fastapi.responses import JSONResponse
 
 from src.utils import color_a_hex
 load_dotenv()
+
+
+from src.veyra.img_gen import upload_to_s3
 
 from fastapi import FastAPI
 from src.veyra.persistence import db_pool
@@ -40,15 +44,16 @@ def generate_call_link(agent: Agent):
     return f"https://prueba.com/{user_id}"
 
 
-def save_logo(agent: Agent) -> bool:
+async def save_logo(agent: Agent) -> Optional[str]:
     """
     This tools allows the agent to store the logo image, no parameters are required since
     the image is already in the context.
     """
     image = agent.session_state.get("__image_path", None)
     if not image:
-        return False
-    return True
+        return None
+    file_path = await upload_to_s3(image)
+    return file_path
 
 def upsert_brand_info(brand_name: str, user_name: str, brand_color: str, agent: Agent):
     """
@@ -74,7 +79,8 @@ media_agent = Agent(
 
     goal=goal,
 
-    model=Gemini(id="gemini-2.0-flash"),
+    # model=Gemini(id="gemini-2.0-flash"),
+    model=OpenAIChat(),
     tools=[generate_call_link, save_logo, color_a_hex],
     show_tool_calls=True,
     enable_session_summaries=True,
